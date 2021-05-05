@@ -1,5 +1,6 @@
 package com.uec.demo.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.uec.demo.util.BeanFetcher;
 import com.uec.demo.util.GlobalLogger;
 import com.uec.demo.util.WebSocketRouteResolver;
@@ -11,7 +12,7 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 @Component
-@ServerEndpoint(value = "/chat/{type}/{roomName}/{userName}")
+@ServerEndpoint(value = "/chat/{roomName}/{userName}")
 public class ChatRoomController {
 
     static GlobalLogger logger;
@@ -24,24 +25,25 @@ public class ChatRoomController {
     }
 
     @OnOpen
-    public void onOpen(@PathParam("type") String type, Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
-        router.proxy(type,session,roomName,userName);
+    public void onOpen(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
+        router.proxy("open",session,roomName,userName);
     }
 
     @OnMessage
-    public void onMessage(@PathParam("type") String type, Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName, String jsonStr) throws Exception{
+    public void onMessage(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName, String jsonStr) throws Exception{
         logger.log(jsonStr);
+        String type = JSONObject.parseObject(jsonStr).getString("type");
         router.proxy(type,session,roomName,userName,jsonStr);
     }
 
     @OnError
-    public void onError(@PathParam("type") String type, Throwable error) throws Exception{
-        router.proxy(type,error);
+    public void onError(Throwable error) throws Exception{
+        router.proxy("error",error);
     }
 
     @OnClose
-    public void onClose(@PathParam("type") String type, @PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
-        router.proxy(type,roomName,userName);
+    public void onClose(@PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
+        router.proxy("close",roomName,userName);
     }
 
 }

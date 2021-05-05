@@ -1,10 +1,13 @@
 package com.uec.demo.util;
 
+import org.mapstruct.Mapping;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 获取spring容器
@@ -34,6 +37,12 @@ public class BeanFetcher implements ApplicationContextAware {
 
     public <T> T getBean(String beanName, Class<T> type) {
         return applicationContext.getBean(beanName, type);
+    }
+
+    public <T> T getBeanOfType(Class<T> type){
+        Map<String, T> result = applicationContext.getBeansOfType(type);
+        String[] names = applicationContext.getBeanNamesForType(type);
+        return result.get(names[0]);
     }
 }
 

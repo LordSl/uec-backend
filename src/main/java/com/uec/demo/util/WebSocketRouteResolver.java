@@ -1,5 +1,6 @@
 package com.uec.demo.util;
 
+import com.uec.demo.bl.ChatRoomService;
 import com.uec.demo.blImpl.ChatRoomServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,23 +16,26 @@ public class WebSocketRouteResolver {
     @Autowired
     BeanFetcher beanFetcher;
 //    String configJsonFilePath = "src/main/resources/wsroute.json";
+    //todo 目前还是手工注入，之后会改成json或xml注入
 
     public WebSocketRouteResolver() throws NoSuchMethodException {
         routeMap = new HashMap<>();
 //        String jsonStr = GlobalTrans.getJsonString(configJsonFilePath);
-        routeMap.put("speak", ChatRoomServiceImpl.class.getDeclaredMethod("speak", Session.class, String.class, String.class, String.class));
-        routeMap.put("ask", ChatRoomServiceImpl.class.getDeclaredMethod("ask", Session.class, String.class, String.class, String.class));
-        routeMap.put("answer", ChatRoomServiceImpl.class.getDeclaredMethod("answer", Session.class, String.class, String.class, String.class));
-        routeMap.put("open", ChatRoomServiceImpl.class.getDeclaredMethod("open", Session.class, String.class, String.class));
-        routeMap.put("close", ChatRoomServiceImpl.class.getDeclaredMethod("close", String.class, String.class));
-        routeMap.put("error", ChatRoomServiceImpl.class.getDeclaredMethod("error", Throwable.class));
+        routeMap.put("speak", ChatRoomService.class.getDeclaredMethod("speak", Session.class, String.class, String.class, String.class));
+        routeMap.put("ask", ChatRoomService.class.getDeclaredMethod("ask", Session.class, String.class, String.class, String.class));
+        routeMap.put("answer", ChatRoomService.class.getDeclaredMethod("answer", Session.class, String.class, String.class, String.class));
+        routeMap.put("open", ChatRoomService.class.getDeclaredMethod("open", Session.class, String.class, String.class));
+        routeMap.put("close", ChatRoomService.class.getDeclaredMethod("close", String.class, String.class));
+        routeMap.put("error", ChatRoomService.class.getDeclaredMethod("error", Throwable.class));
 
     }
 
     public void proxy(String methodName, Object... args) throws InvocationTargetException, IllegalAccessException {
         Method method = routeMap.get(methodName);
         Class<?> c = method.getDeclaringClass();
-        Object instance = beanFetcher.getBean(c);
-        method.invoke(c,args);
+        Object instance;
+        if(c.isInterface()) instance = beanFetcher.getBeanOfType(c);
+        else  instance = beanFetcher.getBean(c);
+        method.invoke(instance,args);
     }
 }

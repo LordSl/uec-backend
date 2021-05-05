@@ -28,7 +28,7 @@
             })
             return encrypted.ciphertext.toString()
         }
-        //DES解密
+
         function decryptByDES(ciphertext, key){
             let keyHex = CryptoJS.enc.Hex.parse(key)
             let decrypted = CryptoJS.DES.decrypt({
@@ -38,6 +38,16 @@
                 padding: CryptoJS.pad.Iso10126
             })
             return CryptoJS.enc.Utf8.stringify(decrypted)
+        }
+
+        function genDesKey(num) {
+            let library = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
+            let key = ""
+            for (let i = 0; i < num; i++) {
+                let randomPoz = Math.floor(Math.random() * library.length)
+                key += library.substring(randomPoz, randomPoz + 1)
+            }
+            return key
         }
 
         let websocket
@@ -50,23 +60,24 @@
         window.onbeforeunload = function(){
             websocket.close()
         }
+
         //将消息显示在网页上
-        function setMessageInnerHTML(innerHTML){
-            document.getElementById('message').innerHTML += innerHTML + '<br/>'
+        function showMessage(message){
+            document.getElementById('message').innerHTML += message + '<br/>'
         }
 
         function connect(){
             userName = document.getElementById('username').value
             roomName = document.getElementById('roomname').value
-            websocket = new WebSocket("ws://localhost:8080/chat/"+roomName+"/"+userName+"?req=aaa")
+            websocket = new WebSocket("ws://localhost:8080/chat/"+roomName+"/"+userName)
             //连接发生错误的回调方法
             websocket.onerror = function(){
-                setMessageInnerHTML("error")
+                showMessage("error")
             }
             
             //连接成功建立的回调方法
             websocket.onopen = function(event){
-                setMessageInnerHTML("open")
+                showMessage("open")
                 rsaKey = cryptico.generateRSAKey(Math.random().toString(), 1024)
                 let publicKey = cryptico.publicKeyString(rsaKey)
                 let msg = {
@@ -75,20 +86,20 @@
                     "senderName":userName
                 }
                 websocket.send(JSON.stringify(msg))
-                console.log("gene rsa key and send")
+                console.log("gen rsa key and send")
             }
             
             //连接关闭的回调方法
             websocket.onclose = function(){
-                setMessageInnerHTML("close")
+                showMessage("close")
             }
 
             //接收到消息的回调方法
             websocket.onmessage = function(event){
-                setMessageInnerHTML(event.data)
+                showMessage(event.data)
                 if(event.data==="master"){
                     desKey = genDesKey(16)
-                    console.log("gene des "+desKey)
+                    console.log("gen des "+desKey)
                 }
                 else {
                     let msg = JSON.parse(event.data)
@@ -116,7 +127,7 @@
                                 "type":"speak",
                                 "content": decryptByDES(msg.content,desKey)
                             }
-                            setMessageInnerHTML(JSON.stringify(realMsg))
+                            showMessage(JSON.stringify(realMsg))
                         }
                     }
 
@@ -142,16 +153,6 @@
             websocket.close()
         }
 
-
-        function genDesKey(num) {
-            let library = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
-            let key = ""
-            for (let i = 0; i < num; i++) {
-                let randomPoz = Math.floor(Math.random() * library.length)
-                key += library.substring(randomPoz, randomPoz + 1)
-            }
-            return key
-        }
     </script>
 
 </body>
