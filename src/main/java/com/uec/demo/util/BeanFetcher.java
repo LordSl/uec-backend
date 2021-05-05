@@ -23,7 +23,7 @@ public class BeanFetcher implements ApplicationContextAware {
     }
 
 
-    public static <T> T getBean(Class<T> type) {
+    public <T> T getBean(Class<T> type) {
         try {
             return applicationContext.getBean(type);
         } catch (NoUniqueBeanDefinitionException e) {   //出现多个，选第一个
@@ -32,7 +32,7 @@ public class BeanFetcher implements ApplicationContextAware {
         }
     }
 
-    public static <T> T getBean(String beanName, Class<T> type) {
+    public <T> T getBean(String beanName, Class<T> type) {
         return applicationContext.getBean(beanName, type);
     }
 }
