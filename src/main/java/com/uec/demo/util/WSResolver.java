@@ -1,7 +1,6 @@
 package com.uec.demo.util;
 
 import com.uec.demo.bl.ChatRoomService;
-import com.uec.demo.blImpl.ChatRoomServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,14 +10,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 
 @Component
-public class WebSocketRouteResolver {
+public class WSResolver {
     HashMap<String,Method> routeMap;
     @Autowired
     BeanFetcher beanFetcher;
 //    String configJsonFilePath = "src/main/resources/wsroute.json";
     //todo 目前还是手工注入，之后会改成json或xml注入
 
-    public WebSocketRouteResolver() throws NoSuchMethodException {
+    public WSResolver() throws NoSuchMethodException {
         routeMap = new HashMap<>();
 //        String jsonStr = GlobalTrans.getJsonString(configJsonFilePath);
         routeMap.put("speak", ChatRoomService.class.getDeclaredMethod("speak", Session.class, String.class, String.class, String.class));

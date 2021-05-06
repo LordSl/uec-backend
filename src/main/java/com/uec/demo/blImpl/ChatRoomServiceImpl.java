@@ -6,12 +6,12 @@ import com.uec.demo.config.SessionMapManager;
 import com.uec.demo.util.GlobalJedis;
 import com.uec.demo.util.GlobalLogger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.websocket.Session;
 import java.util.HashMap;
 
-@Component
+@Service
 public class ChatRoomServiceImpl implements ChatRoomService {
     HashMap<String, HashMap<String, Session>> rooms;
     @Autowired
@@ -73,7 +73,10 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             users.put(userName, session);
             rooms.put(roomName, users);
             logger.log("user " + userName + " create room " + roomName);
-            reply(session, "master");
+            JSONObject jo = new JSONObject();
+            jo.put("type","answer");
+            jo.put("content","master");
+            reply(session, jo.toJSONString());
         } else {
             //加入者
             rooms.get(roomName).put(userName, session);
