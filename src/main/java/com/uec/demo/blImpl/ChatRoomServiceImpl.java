@@ -1,30 +1,37 @@
 package com.uec.demo.blImpl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.uec.demo.bl.ChatRoomService;
-import com.uec.demo.config.SessionMapManager;
+import com.uec.demo.config.SessionManager;
 import com.uec.demo.util.GlobalJedis;
 import com.uec.demo.util.GlobalLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.websocket.Session;
+import java.io.IOException;
 import java.util.HashMap;
 
 @Service
 public class ChatRoomServiceImpl implements ChatRoomService {
+    @Autowired
+    SessionManager sessionManager;
     HashMap<String, HashMap<String, Session>> rooms;
+    HashMap<String, HashMap<String, Integer>> dokis;
     @Autowired
     GlobalJedis jedis;
     @Autowired
     GlobalLogger logger;
 
     @Autowired
-    public void init(SessionMapManager sessionMapManager){
-        rooms = sessionMapManager.getRooms();
+    public void init(SessionManager sessionManager) {
+        rooms = sessionManager.getRooms();
+        dokis = sessionManager.getDokis();
+//        locks = sessionManager.getLocks();
     }
 
-    public void speak(Session session, String roomName, String userName ,String jsonStr){
+    public void speakResolve(Session session, String roomName, String userName, String jsonStr) {
         HashMap<String, Session> room = rooms.get(roomName);
         for (String u : room.keySet()) {
             Session s = room.get(u);
@@ -32,10 +39,10 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         }
     }
 
-    public void ask(Session session, String roomName, String userName ,String jsonStr) throws InterruptedException {
+    public void askResolve(Session session, String roomName, String userName, String jsonStr) throws InterruptedException {
         //第2人...第n人加入房间时，向房间广播请求钥匙的信息
         HashMap<String, Session> room = rooms.get(roomName);
-        String senderName = JSONObject.parseObject(jsonStr).getString("senderName");
+        String senderName = getJsonProperty(jsonStr, "senderName");
         jedis.setnx("help:" + senderName, "", 60);
 
         String[] answerList = new String[room.size()];
@@ -54,14 +61,15 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             Thread.sleep(1000);
         }
     }
-    public void answer(Session session, String roomName, String userName ,String jsonStr) {
-        String senderName = JSONObject.parseObject(jsonStr).getString("senderName");
+
+    public void answerResolve(Session session, String roomName, String userName, String jsonStr) {
+        String senderName = getJsonProperty(jsonStr, "senderName");
         Session s = rooms.get(roomName).get(senderName);
         reply(s, jsonStr);
         jedis.del("help:" + senderName);
     }
 
-    public void open(Session session, String roomName, String userName) {
+    public void openResolve(Session session, String roomName, String userName) throws IOException {
         //房间默认存在时间为1天
         boolean ok = jedis.setnx("room:" + roomName, userName, 86400L);
         //websocket的session无法序列化，无法存进redis
@@ -69,38 +77,74 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         if (ok) {
             //创建者
-            HashMap<String, Session> users = new HashMap<>();
+            HashMap<String, Session> users = rooms.merge(roomName, new HashMap<>(), (oldValue, newValue) -> oldValue);
             users.put(userName, session);
-            rooms.put(roomName, users);
             logger.log("user " + userName + " create room " + roomName);
-            JSONObject jo = new JSONObject();
-            jo.put("type","answer");
-            jo.put("content","master");
-            reply(session, jo.toJSONString());
+
+            reply(session, replyText("answer", "master"));
+
+            sessionManager.startListenDoki(roomName);
+
         } else {
             //加入者
-            rooms.get(roomName).put(userName, session);
+            HashMap<String, Session> room = rooms.get(roomName);
+            if (room.containsKey(userName)) {
+                session.close();
+                return;
+            }
+
+            room.put(userName, session);
+
+            for (Session s : room.values())
+                reply(s, replyText("notice", userName + "进入房间"));
+
             logger.log("user " + userName + " join room " + roomName);
         }
     }
 
-    public void error(Throwable error) {
+    @Override
+    public void dokiResolve(Session session, String roomName, String userName, String jsonStr) {
+        HashMap<String, Integer> room = dokis.merge(roomName, new HashMap<>(), (oldValue, newValue) -> oldValue);
+        room.merge(userName, 1, (oldValue, newValue) -> newValue);
+        logger.log("user " + userName + " in room " + roomName + " live");
+    }
+
+    public void errorResolve(Throwable error) {
         logger.error("error");
     }
 
-    public void close(String roomName, String userName) {
+    public void closeResolve(String roomName, String userName) {
         HashMap<String, Session> room = rooms.get(roomName);
         room.remove(userName);
+
+        for (Session s : room.values())
+            reply(s, replyText("notice", userName + "离开房间"));
+
         logger.log("user " + userName + " leave room " + roomName);
         if (room.size() == 0) {
             rooms.remove(roomName);
+            dokis.remove(roomName);
+            sessionManager.stopListenDoki(roomName);
             logger.log("room " + roomName + " destroy");
             jedis.del("room:" + roomName);
         }
+
     }
 
 
     private void reply(Session session, String msg) {
         session.getAsyncRemote().sendText(msg);
+    }
+
+    private String replyText(String type, String content) {
+        JSONObject jo = new JSONObject();
+        jo.put("type", type);
+        jo.put("content", content);
+        return jo.toJSONString();
+    }
+
+    private String getJsonProperty(String jsonStr, String property) {
+        JSONObject jo = JSON.parseObject(jsonStr);
+        return jo.getString(property);
     }
 }

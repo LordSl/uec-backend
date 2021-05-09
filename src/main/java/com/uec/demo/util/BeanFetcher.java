@@ -1,6 +1,5 @@
 package com.uec.demo.util;
 
-import org.mapstruct.Mapping;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
@@ -39,7 +38,7 @@ public class BeanFetcher implements ApplicationContextAware {
         return applicationContext.getBean(beanName, type);
     }
 
-    public <T> T getBeanOfType(Class<T> type){
+    public <T> T getBeanOfType(Class<T> type) {
         Map<String, T> result = applicationContext.getBeansOfType(type);
         String[] names = applicationContext.getBeanNamesForType(type);
         return result.get(names[0]);

@@ -8,19 +8,19 @@ import redis.clients.jedis.params.SetParams;
 public class GlobalJedis {
     Jedis jedis;
 
-    public GlobalJedis(){
-        jedis =  new Jedis("localhost",6379);
+    public GlobalJedis() {
+        jedis = new Jedis("localhost", 6379);
     }
 
-    public boolean setnx(String key, String value, long time){
+    public boolean setnx(String key, String value, long time) {
         SetParams params = new SetParams();
         params.ex(time);
         params.nx();
-        String ex = jedis.set(key,value,params);
-        return !(ex==null);
+        String ex = jedis.set(key, value, params);
+        return !(ex == null);
     }
 
-    public boolean del(String key){
-        return jedis.del(key)==1L;
+    public boolean del(String key) {
+        return jedis.del(key) == 1L;
     }
 }

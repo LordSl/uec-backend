@@ -28,25 +28,25 @@ public class ChatRoomController {
     }
 
     @OnOpen
-    public void onOpen(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
-        resolver.proxy("open",session,roomName,userName);
+    public void onOpen(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception {
+        resolver.proxy("ChatRoomService", "open", session, roomName, userName);
     }
 
     @OnMessage
-    public void onMessage(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName, String jsonStr) throws Exception{
+    public void onMessage(Session session, @PathParam("roomName") String roomName, @PathParam("userName") String userName, String jsonStr) throws Exception {
         logger.log(jsonStr);
         String type = JSONObject.parseObject(jsonStr).getString("type");
-        resolver.proxy(type,session,roomName,userName,jsonStr);
+        resolver.proxy("ChatRoomService", type, session, roomName, userName, jsonStr);
     }
 
     @OnError
-    public void onError(Throwable error) throws Exception{
-        resolver.proxy("error",error);
+    public void onError(Throwable error) throws Exception {
+        resolver.proxy("ChatRoomService", "error", error);
     }
 
     @OnClose
-    public void onClose(@PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception{
-        resolver.proxy("close",roomName,userName);
+    public void onClose(@PathParam("roomName") String roomName, @PathParam("userName") String userName) throws Exception {
+        resolver.proxy("ChatRoomService", "close", roomName, userName);
     }
 
 }

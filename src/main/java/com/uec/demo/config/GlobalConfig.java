@@ -14,7 +14,7 @@ public class GlobalConfig {
     GlobalLogger logger;
 
     @Bean
-    public void init(){
+    public void init() {
         logger.log("config finish");
     }
 }

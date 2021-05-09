@@ -1,0 +1,38 @@
+{
+  "pkg": "com.uec.demo.bl",
+  "classes": [
+    {
+      "class": "ChatRoomService",
+      "mapping": [
+        {
+          "type": "speak",
+          "method": "speakResolve"
+        },
+        {
+          "type": "ask",
+          "method": "askResolve"
+        },
+        {
+          "type": "answer",
+          "method": "answerResolve"
+        },
+        {
+          "type": "open",
+          "method": "openResolve"
+        },
+        {
+          "type": "close",
+          "method": "closeResolve"
+        },
+        {
+          "type": "error",
+          "method": "errorResolve"
+        },
+        {
+          "type": "doki",
+          "method": "dokiResolve"
+        }
+      ]
+    }
+  ]
+}
